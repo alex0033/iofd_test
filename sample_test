@@ -1,0 +1,9 @@
+path="$(dirname $0)/sample.rb"
+
+expect -c "
+set timeout 20
+ruby $path
+expect a:\  ; send 2
+expect b:\  ; send 3
+expect \"a+b 5\":\ ; echo \"true answer\" 
+"
