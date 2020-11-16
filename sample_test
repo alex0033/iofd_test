@@ -1,9 +1,13 @@
-path="$(dirname $0)/sample.rb"
+exec_file="$(dirname $0)/sample.rb"
+input_file="$(dirname $0)/input_file"
 
-expect -c "
-set timeout 20
-ruby $path
-expect a:\  ; send 2
-expect b:\  ; send 3
-expect \"a+b 5\":\ ; echo \"true answer\" 
-"
+case1=$(
+    ruby $exec_file < $input_file | grep "a+b: 9"
+)
+
+if [ -z "$case1" ]
+then
+    echo "fail case1"
+else
+    echo "success case1"
+fi
