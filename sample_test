@@ -1,8 +1,16 @@
 exec_file="$(dirname $0)/sample.rb"
-input_file="$(dirname $0)/input_file"
+output_file="$(dirname $0)/output_file"
+
+expect -c "
+    set timeout 20
+    spawn ruby $exec_file
+    expect a:\  ; send \"2\n\"
+    expect b:\  ; send \"3\n\"
+    expect
+" >$output_file
 
 case1=$(
-    ruby $exec_file < $input_file | grep "a+b: 9"
+    cat $output_file | grep "a+b: 5"
 )
 
 if [ -z "$case1" ]
