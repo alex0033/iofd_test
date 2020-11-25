@@ -1,5 +1,3 @@
-root_directory = Dir.pwd
-
 def plus
     print "a: "
     a = gets.chomp.to_i
@@ -20,7 +18,7 @@ end
 def mkdir
     print "directory name: "
     directory_name = gets.chomp
-    Dir.mkdir directory_name
+    Dir.mkdir directory_name unless Dir.exist? directory_name
 end
 
 print "what action: "

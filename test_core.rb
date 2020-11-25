@@ -85,16 +85,28 @@ end
 
 def confirm_directory_exist(test_name, inputs, expected_directory)
     cmd = "ruby #{@exec_file}"
-    PTY.getpty(cmd) do |i, o|
+    # テストケースとしての問題があれば、テスト失敗
+    if Dir.exist?(expected_directory)
+        puts "fail #{test_name}".red
+        puts "テストケースとして問題あり(ディレクトリが存在済み)"
+        return
+    end
+    PTY.getpty(cmd) do |i, o, pid|
+        o.sync = true
         inputs.each do |input|
-            i.expect(input[:assist_input], 10) do
+            i.expect(input[:assist_input]) do
                 o.puts input[:auto_input]
             end
         end
+        # 下記コードでコマンドの終了待ち
+        # これによりディレクトリ作成が反映される
+        Process.wait pid
     end
     # 下記でテストが成功か否かを表示
     if Dir.exist?(expected_directory)
         puts "success #{test_name}".green
+        # 状態のリセット(ディレクトリの削除)
+        Dir.rmdir expected_directory
     else
         puts "fail #{test_name}".red
     end
