@@ -27,16 +27,23 @@ class String
     end
 end
 
-def cofirm_console_output(test_name, inputs, expected_output)
-    cmd = "ruby #{@exec_file}"
-    PTY.getpty(cmd) do |i, o|
-        # 以下のブロックは抽象化の対象
+def auto_input(cmd, inputs)
+    PTY.getpty(cmd) do |i, o, pid|
         inputs.each do |input|
             i.expect(input[:assist_input]) do
                 o.puts input[:auto_input]
             end
         end
-        # 下記でテストが成功か否かを表示
+        yield i, o if block_given?
+        # 下記コードでコマンドの終了待ち
+        # これによりディレクトリやファイル作成が反映される
+        Process.wait pid
+    end
+end
+
+def cofirm_console_output(test_name, inputs, expected_output)
+    cmd = "ruby #{@exec_file}"
+    auto_input(cmd, inputs) do |i, o|
         begin
             i.expect(expected_output, 10) do |line|
                 puts "success #{test_name}".green
@@ -56,14 +63,7 @@ def confirm_file_create(test_name, inputs, expected_file)
         puts "テストケースとして問題あり(ファイルが存在済み)"
         return
     end
-    PTY.getpty(cmd) do |i, o, pid|
-        inputs.each do |input|
-            i.expect(input[:assist_input]) do
-                o.puts input[:auto_input]
-            end
-        end
-        Process.wait pid
-    end
+    auto_input(cmd, inputs)
     # 下記でテストが成功か否かを表示
     if File.exist?(expected_file)
         puts "success #{test_name}".green
@@ -81,14 +81,7 @@ def confirm_new_file(test_name, inputs, expected_file, comparison_file)
         puts "テストケースとして問題あり(ファイルが存在済み)"
         return
     end
-    PTY.getpty(cmd) do |i, o, pid|
-        inputs.each do |input|
-            i.expect(input[:assist_input], 10) do
-                o.puts input[:auto_input]
-            end
-        end
-        Process.wait pid
-    end
+    auto_input(cmd, inputs)
     # 下記でテストが成功か否かを表示
     # 変更する必要性あり
     if File.exist?(expected_file) && FileUtils.cmp(expected_file, comparison_file)
@@ -107,15 +100,10 @@ def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
         puts "テストケースとして問題あり(ファイルが未存在)"
         return
     end
-    # 共通化（inputs_check??）
-    PTY.getpty(cmd) do |i, o, pid|
-        inputs.each do |input|
-            i.expect(input[:assist_input], 10) do
-                o.puts input[:auto_input]
-            end
-        end
-        Process.wait pid
-    end
+    copy_file = "copy.txt"
+    # ファイルの一時的なコピー
+    FileUtils.cp expected_file, copy_file
+    auto_input(cmd, inputs)
     # 下記でテストが成功か否かを表示
     # 変更する必要性あり
     if File.exist?(expected_file) && FileUtils.cmp(expected_file, comparison_file)
@@ -124,6 +112,35 @@ def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
         puts "fail #{test_name}".red
     end
     # リセット
+    if File.exist?(expected_file)
+        FileUtils.cp copy_file, expected_file
+    end
+    File.delete copy_file
+end
+
+def confirm_delete_file(test_name, inputs, expected_file)
+    cmd = "ruby #{@exec_file}"
+    unless File.exist?(expected_file)
+        puts "fail #{test_name}".red
+        puts "テストケースとして問題あり(ファイルが未存在)"
+        return
+    end
+    copy_file = "copy.txt"
+    # ファイルの一時的なコピー
+    FileUtils.cp expected_file, copy_file
+    auto_input(cmd, inputs)
+    # 下記でテストが成功か否かを表示
+    # 変更する必要性あり
+    if File.exist?(expected_file)
+        puts "fail #{test_name}".red
+    else
+        puts "success #{test_name}".green
+    end
+    # リセット
+    unless File.exist?(expected_file)
+        FileUtils.cp copy_file, expected_file
+    end
+    File.delete copy_file
 end
 
 def confirm_directory_exist(test_name, inputs, expected_directory)
@@ -133,16 +150,7 @@ def confirm_directory_exist(test_name, inputs, expected_directory)
         puts "テストケースとして問題あり(ディレクトリが存在済み)"
         return
     end
-    PTY.getpty(cmd) do |i, o, pid|
-        inputs.each do |input|
-            i.expect(input[:assist_input]) do
-                o.puts input[:auto_input]
-            end
-        end
-        # 下記コードでコマンドの終了待ち
-        # これによりディレクトリ作成が反映される
-        Process.wait pid
-    end
+    auto_input(cmd, inputs)
     # 下記でテストが成功か否かを表示
     if Dir.exist?(expected_directory)
         puts "success #{test_name}".green

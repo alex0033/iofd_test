@@ -25,6 +25,18 @@ confirm_file_create("file_exist", file_inputs, test_file)
 
 confirm_new_file("new_file_eq", file_inputs, test_file, "comparison_files/new_file.txt")
 
+chfile_inputs = [
+    { assist_input: "action: ", auto_input: "chfile" },
+    { assist_input: "change: ", auto_input: "change" },
+]
+confirm_changed_file("change_file_eq", chfile_inputs, "change_file", "comparison_files/change_file.txt")
+
+rmfile_inputs = [
+    { assist_input: "action: ", auto_input: "rmfile" },
+    { assist_input: "remove file: ", auto_input: "remove_file" },
+]
+confirm_delete_file("remove_file", rmfile_inputs, "remove_file")
+
 test_dir = "test_dir"
 directory_inputs = [
     { assist_input: "action:", auto_input: "mkdir" },

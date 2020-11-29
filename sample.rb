@@ -15,6 +15,20 @@ def mkfile
     end
 end
 
+def chfile
+    print "change: "
+    output = gets.chomp
+    File.open("change_file", "w") do |f|
+        f.puts output
+    end
+end
+
+def rmfile
+    print:"remove file: "
+    file_name = gets.chomp
+    File.delete file_name
+end
+
 def mkdir
     print "directory name: "
     directory_name = gets.chomp
@@ -29,6 +43,10 @@ when "plus"
     plus
 when "mkfile"
     mkfile
+when "chfile"
+    chfile
+when "rmfile"
+    rmfile
 when "mkdir"
     mkdir
 else
