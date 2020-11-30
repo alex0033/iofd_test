@@ -115,7 +115,7 @@ def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
     File.delete copy_file
 end
 
-def confirm_delete_file(test_name, inputs, expected_file)
+def confirm_file_delete(test_name, inputs, expected_file)
     unless File.exist?(expected_file)
         puts "fail #{test_name}".red
         puts "テストケースとして問題あり(ファイルが未存在)"
@@ -139,8 +139,7 @@ def confirm_delete_file(test_name, inputs, expected_file)
     File.delete copy_file
 end
 
-def confirm_directory_exist(test_name, inputs, expected_directory)
-    cmd = "ruby #{@exec_file}"
+def confirm_directory_create(test_name, inputs, expected_directory)
     if Dir.exist?(expected_directory)
         puts "fail #{test_name}".red
         puts "テストケースとして問題あり(ディレクトリが存在済み)"
@@ -156,3 +155,28 @@ def confirm_directory_exist(test_name, inputs, expected_directory)
         puts "fail #{test_name}".red
     end
 end
+
+def confirm_directory_delete(test_name, inputs, expected_directory)
+    unless Dir.exist?(expected_directory)
+        puts "fail #{test_name}".red
+        puts "テストケースとして問題あり(ディレクトリが未存在)"
+        return
+    end
+    copy_directory = "copy_dir"
+    # ディレクトリの一時的なコピー
+    FileUtils.cp_r expected_directory, copy_directory
+    auto_input(inputs)
+    # 下記でテストが成功か否かを表示
+    # 変更する必要性あり
+    if Dir.exist?(expected_directory)
+        puts "fail #{test_name}".red
+    else
+        puts "success #{test_name}".green
+    end
+    # リセット
+    unless Dir.exist?(expected_directory)
+        FileUtils.cp_r copy_directory, expected_file
+    end
+    Dir.rmdir copy_directory
+end
+

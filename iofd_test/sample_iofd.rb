@@ -37,11 +37,18 @@ rmfile_inputs = [
     { assist_input: "action: ", auto_input: "rmfile" },
     { assist_input: "remove file: ", auto_input: "remove_file" },
 ]
-confirm_delete_file("remove_file", rmfile_inputs, "remove_file")
+confirm_file_delete("remove_file", rmfile_inputs, "remove_file")
 
 test_dir = "test_dir"
 directory_inputs = [
     { assist_input: "action:", auto_input: "mkdir" },
     { assist_input: "directory name:", auto_input: test_dir }
 ]
-confirm_directory_exist("directory_exist", directory_inputs, test_dir)
+confirm_directory_create("create_directory", directory_inputs, test_dir)
+
+remove_dir = "remove_directoy"
+directory_inputs = [
+    { assist_input: "action:", auto_input: "mkdir" },
+    { assist_input: "directory name:", auto_input: remove_dir }
+]
+confirm_directory_create("remove_directory", directory_inputs, remove_dir)
