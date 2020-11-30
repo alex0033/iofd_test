@@ -2,8 +2,9 @@ require 'pty'
 require 'expect'
 require 'fileutils'
 
-@exec_file = "sample.rb"
-# exec_file = ARGV[0]
+def set_cmd(file_name)
+    @cmd = "ruby #{file_name}"
+end
 
 class String
     def colorize(color_code)
@@ -27,8 +28,8 @@ class String
     end
 end
 
-def auto_input(cmd, inputs)
-    PTY.getpty(cmd) do |i, o, pid|
+def auto_input(inputs)
+    PTY.getpty(@cmd) do |i, o, pid|
         inputs.each do |input|
             i.expect(input[:assist_input]) do
                 o.puts input[:auto_input]
@@ -41,9 +42,8 @@ def auto_input(cmd, inputs)
     end
 end
 
-def cofirm_console_output(test_name, inputs, expected_output)
-    cmd = "ruby #{@exec_file}"
-    auto_input(cmd, inputs) do |i, o|
+def cofirm_console_output(test_name, inputs, expected_output)    
+    auto_input(inputs) do |i, o|
         begin
             i.expect(expected_output, 10) do |line|
                 puts "success #{test_name}".green
@@ -57,13 +57,12 @@ def cofirm_console_output(test_name, inputs, expected_output)
 end
 
 def confirm_file_create(test_name, inputs, expected_file)
-    cmd = "ruby #{@exec_file}"
     if File.exist?(expected_file)
         puts "fail #{test_name}".red
         puts "テストケースとして問題あり(ファイルが存在済み)"
         return
     end
-    auto_input(cmd, inputs)
+    auto_input(inputs)
     # 下記でテストが成功か否かを表示
     if File.exist?(expected_file)
         puts "success #{test_name}".green
@@ -75,13 +74,12 @@ def confirm_file_create(test_name, inputs, expected_file)
 end
 
 def confirm_new_file(test_name, inputs, expected_file, comparison_file)
-    cmd = "ruby #{@exec_file}"
     if File.exist?(expected_file)
         puts "fail #{test_name}".red
         puts "テストケースとして問題あり(ファイルが存在済み)"
         return
     end
-    auto_input(cmd, inputs)
+    auto_input(inputs)
     # 下記でテストが成功か否かを表示
     # 変更する必要性あり
     if File.exist?(expected_file) && FileUtils.cmp(expected_file, comparison_file)
@@ -94,7 +92,6 @@ def confirm_new_file(test_name, inputs, expected_file, comparison_file)
 end
 
 def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
-    cmd = "ruby #{@exec_file}"
     unless File.exist?(expected_file)
         puts "fail #{test_name}".red
         puts "テストケースとして問題あり(ファイルが未存在)"
@@ -103,7 +100,7 @@ def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
     copy_file = "copy.txt"
     # ファイルの一時的なコピー
     FileUtils.cp expected_file, copy_file
-    auto_input(cmd, inputs)
+    auto_input(inputs)
     # 下記でテストが成功か否かを表示
     # 変更する必要性あり
     if File.exist?(expected_file) && FileUtils.cmp(expected_file, comparison_file)
@@ -119,7 +116,6 @@ def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
 end
 
 def confirm_delete_file(test_name, inputs, expected_file)
-    cmd = "ruby #{@exec_file}"
     unless File.exist?(expected_file)
         puts "fail #{test_name}".red
         puts "テストケースとして問題あり(ファイルが未存在)"
@@ -128,7 +124,7 @@ def confirm_delete_file(test_name, inputs, expected_file)
     copy_file = "copy.txt"
     # ファイルの一時的なコピー
     FileUtils.cp expected_file, copy_file
-    auto_input(cmd, inputs)
+    auto_input(inputs)
     # 下記でテストが成功か否かを表示
     # 変更する必要性あり
     if File.exist?(expected_file)
@@ -150,7 +146,7 @@ def confirm_directory_exist(test_name, inputs, expected_directory)
         puts "テストケースとして問題あり(ディレクトリが存在済み)"
         return
     end
-    auto_input(cmd, inputs)
+    auto_input(inputs)
     # 下記でテストが成功か否かを表示
     if Dir.exist?(expected_directory)
         puts "success #{test_name}".green

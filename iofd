@@ -1,0 +1,5 @@
+#!/bin/sh
+
+for pathfile in iofd_test/*_iofd.rb; do
+    ruby $pathfile
+done

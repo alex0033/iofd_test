@@ -1,4 +1,6 @@
-require './test_core.rb'
+require './iofd_test/test_core.rb'
+
+set_cmd "sample.rb"
 
 inputs1 = [
     { assist_input: "action: ", auto_input: "plus" },
@@ -23,13 +25,13 @@ file_inputs = [
 ]
 confirm_file_create("file_exist", file_inputs, test_file)
 
-confirm_new_file("new_file_eq", file_inputs, test_file, "comparison_files/new_file.txt")
+confirm_new_file("new_file_eq", file_inputs, test_file, "iofd_test/comparison_files/new_file.txt")
 
 chfile_inputs = [
     { assist_input: "action: ", auto_input: "chfile" },
     { assist_input: "change: ", auto_input: "change" },
 ]
-confirm_changed_file("change_file_eq", chfile_inputs, "change_file", "comparison_files/change_file.txt")
+confirm_changed_file("change_file_eq", chfile_inputs, "change_file", "iofd_test/comparison_files/change_file.txt")
 
 rmfile_inputs = [
     { assist_input: "action: ", auto_input: "rmfile" },
