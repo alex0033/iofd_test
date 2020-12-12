@@ -52,3 +52,9 @@ directory_inputs = [
     { assist_input: "directory name:", auto_input: remove_dir }
 ]
 confirm_directory_create("remove_directory", directory_inputs, remove_dir)
+
+outputs_inputs = [
+    { assist_input: "action: ", auto_input: "outputs" }
+]
+outputs = ["good", "good"]
+it("outputs", outputs_inputs, outputs: outputs)

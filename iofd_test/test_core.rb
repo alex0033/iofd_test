@@ -42,6 +42,24 @@ def auto_input(inputs)
     end
 end
 
+def it(test_name, inputs, outputs: nil, files: nil, directories: nil)
+    auto_input(inputs) do |i, o|
+        begin
+            outputs.each do |output|
+                i.expect(output)
+            end
+        rescue => error
+            puts "fail #{test_name}".red
+            puts "**#{error}"
+            return
+            # 出力結果を表示
+            # flag???
+        end
+    end
+    # 最後までたどり着けば成功
+    puts "success #{test_name}".green
+end
+
 def cofirm_console_output(test_name, inputs, expected_output)    
     auto_input(inputs) do |i, o|
         begin

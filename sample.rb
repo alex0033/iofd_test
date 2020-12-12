@@ -41,6 +41,11 @@ def rmdir
     Dir.rmdir directory_name if Dir.exist? directory_name
 end
 
+def outputs
+    puts "good"
+    puts "good"
+end
+
 print "what action: "
 action = gets.chomp
 
@@ -57,6 +62,8 @@ when "mkdir"
     mkdir
 when "rmdir"
     rmdir
+when "outputs"
+    outputs
 else
     puts "That action is nothing."
 end
