@@ -42,52 +42,85 @@ def auto_input(inputs)
     end
 end
 
-def it(test_name, inputs, outputs: nil, files: nil, directories: nil)
-    auto_input(inputs) do |i, o|
-        begin
-            outputs.each do |output|
-                i.expect(output)
-            end
-        rescue => error
-            puts "fail #{test_name}".red
-            puts "**#{error}"
-            return
-            # 出力結果を表示
-            # flag???
-        end
-    end
-    # 最後までたどり着けば成功
-    puts "success #{test_name}".green
-end
-
-def cofirm_console_output(test_name, inputs, expected_output)    
-    auto_input(inputs) do |i, o|
-        begin
-            i.expect(expected_output, 10) do |line|
-                puts "success #{test_name}".green
-            end
-        rescue => error
-            puts "fail #{test_name}".red
-            # 出力結果を表示
-            # flag???
-        end
-    end
-end
-
-def confirm_file_create(test_name, inputs, expected_file)
-    if File.exist?(expected_file)
-        puts "fail #{test_name}".red
-        puts "テストケースとして問題あり(ファイルが存在済み)"
+def in_test_environment
+    original_dir = Dir::pwd
+    # コピーディレクトリ作成準備
+    Dir::chdir ".."
+    copy_dir = "#{Dir::pwd}/copy_dir"
+    if Dir.exist? copy_dir || original_dir == copy_dir
+        puts "テスト環境が準備できません"
+        Dir::chdir original_dir
         return
     end
-    auto_input(inputs)
-    # 下記でテストが成功か否かを表示
-    if File.exist?(expected_file)
-        puts "success #{test_name}".green
-        # リセット
-        File.delete expected_file
-    else
-        puts "fail #{test_name}".red
+    # コピーディレクトリ作成と移動
+    FileUtils.cp_r original_dir, copy_dir
+    Dir::chdir copy_dir
+    # 下記でtestを実施
+    begin
+        yield
+    rescue => error
+        puts error
+    end
+    # 状態のリセット
+    Dir::chdir ".."
+    FileUtils.rm_rf copy_dir
+    Dir::chdir original_dir
+end
+
+def test_error(test_name, message = nil)
+    puts "fail #{test_name}".red
+    puts "**#{message}" if message
+    return
+end
+
+def it(test_name, inputs, outputs: [], files: [], directories: [], remove_files: [], remove_directories: [])
+    has_error = false
+    in_test_environment do
+        auto_input(inputs) do |i, o|
+            begin
+                # 完璧でない一致でOK問題
+                # 例）"output"を期待したとき、"out"でもテストが通るという問題
+                # この仕様だと細かい文字列のテストには問題あり
+                outputs.each do |output|
+                    i.expect(output)
+                end
+            rescue => error
+                test_error test_name, error
+                has_error = true
+                # 出力結果を表示
+                # flag???
+            end
+        end
+        # filesの存在確認ー＞存在しないとエラーになる
+        files.each do |f|
+            unless File.exist?(f)
+                test_error test_name
+                has_error = true
+            end
+        end
+        # directoriesの存在確認ー＞存在しないとエラーになる
+        directories.each do |d|
+            unless Dir.exist?(d)
+                test_error test_name
+                has_error = true
+            end
+        end
+        # remove_filesの存在確認ー＞存在するとエラーになる
+        remove_files.each do |f|
+            if File.exist?(f)
+                test_error test_name
+                has_error = true
+            end
+        end
+        # remove_directoriesの存在確認ー＞存在するとエラーになる
+        remove_directories.each do |d|
+            if Dir.exist?(d)
+                test_error test_name, "#{d}が削除できていません"
+                has_error = true
+            end
+        end
+        # 最後までたどり着けば成功
+        puts "success #{test_name}".green unless has_error
     end
 end
 
@@ -132,69 +165,3 @@ def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
     end
     File.delete copy_file
 end
-
-def confirm_file_delete(test_name, inputs, expected_file)
-    unless File.exist?(expected_file)
-        puts "fail #{test_name}".red
-        puts "テストケースとして問題あり(ファイルが未存在)"
-        return
-    end
-    copy_file = "copy.txt"
-    # ファイルの一時的なコピー
-    FileUtils.cp expected_file, copy_file
-    auto_input(inputs)
-    # 下記でテストが成功か否かを表示
-    # 変更する必要性あり
-    if File.exist?(expected_file)
-        puts "fail #{test_name}".red
-    else
-        puts "success #{test_name}".green
-    end
-    # リセット
-    unless File.exist?(expected_file)
-        FileUtils.cp copy_file, expected_file
-    end
-    File.delete copy_file
-end
-
-def confirm_directory_create(test_name, inputs, expected_directory)
-    if Dir.exist?(expected_directory)
-        puts "fail #{test_name}".red
-        puts "テストケースとして問題あり(ディレクトリが存在済み)"
-        return
-    end
-    auto_input(inputs)
-    # 下記でテストが成功か否かを表示
-    if Dir.exist?(expected_directory)
-        puts "success #{test_name}".green
-        # 状態のリセット(ディレクトリの削除)
-        Dir.rmdir expected_directory
-    else
-        puts "fail #{test_name}".red
-    end
-end
-
-def confirm_directory_delete(test_name, inputs, expected_directory)
-    unless Dir.exist?(expected_directory)
-        puts "fail #{test_name}".red
-        puts "テストケースとして問題あり(ディレクトリが未存在)"
-        return
-    end
-    copy_directory = "copy_dir"
-    # ディレクトリの一時的なコピー
-    FileUtils.cp_r expected_directory, copy_directory
-    auto_input(inputs)
-    # 下記でテストが成功か否かを表示
-    # 変更する必要性あり
-    if Dir.exist?(expected_directory)
-        puts "fail #{test_name}".red
-    else
-        puts "success #{test_name}".green
-    end
-    # リセット
-    unless Dir.exist?(expected_directory)
-        FileUtils.cp_r copy_directory, expected_file
-    end
-    Dir.rmdir copy_directory
-end
-
