@@ -28,14 +28,17 @@ class String
     end
 end
 
-def auto_input(inputs)
+def auto_io(io_contents)
     PTY.getpty(@cmd) do |i, o, pid|
-        inputs.each do |input|
-            i.expect(input[:assist_input]) do
-                o.puts input[:auto_input]
+        io_contents.each do |content|
+            i.expect(content[:output]) do |line|
+                puts line.inspect
+                if content[:input]
+                    o.puts content[:input]
+                    i.expect content[:input]
+                end
             end
         end
-        yield i, o if block_given?
         # 下記コードでコマンドの終了待ち
         # これによりディレクトリやファイル作成が反映される
         Process.wait pid
@@ -60,6 +63,7 @@ def in_test_environment
         yield
     rescue => error
         puts error
+        puts "come error"
     end
     # 状態のリセット
     Dir::chdir ".."
@@ -67,101 +71,54 @@ def in_test_environment
     Dir::chdir original_dir
 end
 
-def test_error(test_name, message = nil)
+def test_error(test_name, messages = [])
     puts "fail #{test_name}".red
-    puts "**#{message}" if message
-    return
+    messages.each do |message|
+        puts "**#{message}"
+    end
 end
 
-def it(test_name, inputs, outputs: [], files: [], directories: [], remove_files: [], remove_directories: [])
-    has_error = false
+def it_io(test_name, io_contents, files: [], directories: [], remove_files: [], remove_directories: [])
+    # 引数の型チェックを行う必要性？？
+    error_contents = Array.new
     in_test_environment do
-        auto_input(inputs) do |i, o|
-            begin
-                # 完璧でない一致でOK問題
-                # 例）"output"を期待したとき、"out"でもテストが通るという問題
-                # この仕様だと細かい文字列のテストには問題あり
-                outputs.each do |output|
-                    i.expect(output)
-                end
-            rescue => error
-                test_error test_name, error
-                has_error = true
-                # 出力結果を表示
-                # flag???
-            end
+        # 最後までたどり着けば成功
+        begin
+            auto_io(io_contents)
+        rescue => error
+            error_contents.push error
         end
-        # filesの存在確認ー＞存在しないとエラーになる
+        # filesの存在確認、内容一致の確認ー＞存在しないとエラーになる
         files.each do |f|
-            unless File.exist?(f)
-                test_error test_name
-                has_error = true
+            if !File.exist?(f[:original])
+                error_contents.push "#{f[:original]}が存在しません"
+            elsif f[:comparison] && File.exist?(f[:comparison]) && !FileUtils.cmp(f[:original], f[:comparison])
+                error_contents.push "#{f[:comparison]}と内容が一致しません"
             end
         end
         # directoriesの存在確認ー＞存在しないとエラーになる
         directories.each do |d|
             unless Dir.exist?(d)
-                test_error test_name
-                has_error = true
+                error_contents.push "#{d}が存在しません"
             end
         end
         # remove_filesの存在確認ー＞存在するとエラーになる
         remove_files.each do |f|
             if File.exist?(f)
-                test_error test_name
-                has_error = true
+                error_contents.push "#{f}が削除できていません"
             end
         end
         # remove_directoriesの存在確認ー＞存在するとエラーになる
         remove_directories.each do |d|
             if Dir.exist?(d)
-                test_error test_name, "#{d}が削除できていません"
-                has_error = true
+                error_contents.push "#{d}が削除できていません"
             end
         end
         # 最後までたどり着けば成功
-        puts "success #{test_name}".green unless has_error
+        if error_contents.any?
+            test_error test_name, error_contents
+        else
+            puts "success #{test_name}".green
+        end
     end
-end
-
-def confirm_new_file(test_name, inputs, expected_file, comparison_file)
-    if File.exist?(expected_file)
-        puts "fail #{test_name}".red
-        puts "テストケースとして問題あり(ファイルが存在済み)"
-        return
-    end
-    auto_input(inputs)
-    # 下記でテストが成功か否かを表示
-    # 変更する必要性あり
-    if File.exist?(expected_file) && FileUtils.cmp(expected_file, comparison_file)
-        puts "success #{test_name}".green
-    else
-        puts "fail #{test_name}".red
-    end
-    # リセット
-    File.delete expected_file if File.exist?(expected_file)
-end
-
-def confirm_changed_file(test_name, inputs, expected_file, comparison_file)
-    unless File.exist?(expected_file)
-        puts "fail #{test_name}".red
-        puts "テストケースとして問題あり(ファイルが未存在)"
-        return
-    end
-    copy_file = "copy.txt"
-    # ファイルの一時的なコピー
-    FileUtils.cp expected_file, copy_file
-    auto_input(inputs)
-    # 下記でテストが成功か否かを表示
-    # 変更する必要性あり
-    if File.exist?(expected_file) && FileUtils.cmp(expected_file, comparison_file)
-        puts "success #{test_name}".green
-    else
-        puts "fail #{test_name}".red
-    end
-    # リセット
-    if File.exist?(expected_file)
-        FileUtils.cp copy_file, expected_file
-    end
-    File.delete copy_file
 end

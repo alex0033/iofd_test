@@ -46,6 +46,17 @@ def outputs
     puts "good"
 end
 
+def io
+    print "input: "
+    st = gets.chomp
+    puts st
+    puts st
+    print "input again: "
+    st = gets.chomp
+    puts st
+    puts st
+end
+
 print "what action: "
 action = gets.chomp
 
@@ -64,6 +75,8 @@ when "rmdir"
     rmdir
 when "outputs"
     outputs
+when "io"
+    io
 else
     puts "That action is nothing."
 end
