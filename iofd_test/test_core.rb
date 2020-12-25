@@ -1,9 +1,10 @@
 require 'pty'
 require 'expect'
 require 'fileutils'
+require './iofd_test/iofd_class.rb'
 
 def set_cmd(file_name)
-    @cmd = "ruby #{file_name}"
+    Iofd.set_command("ruby #{file_name}")
 end
 
 class String
@@ -71,54 +72,10 @@ def in_test_environment
     Dir::chdir original_dir
 end
 
-def test_error(test_name, messages = [])
-    puts "fail #{test_name}".red
-    messages.each do |message|
-        puts "**#{message}"
-    end
-end
-
-def it_io(test_name, io_contents, files: [], directories: [], remove_files: [], remove_directories: [])
-    # 引数の型チェックを行う必要性？？
-    error_contents = Array.new
+def iofd(test_name)
+    iofd = Iofd.new test_name
+    iofd = yield iofd
     in_test_environment do
-        # 最後までたどり着けば成功
-        begin
-            auto_io(io_contents)
-        rescue => error
-            error_contents.push error
-        end
-        # filesの存在確認、内容一致の確認ー＞存在しないとエラーになる
-        files.each do |f|
-            if !File.exist?(f[:original])
-                error_contents.push "#{f[:original]}が存在しません"
-            elsif f[:comparison] && File.exist?(f[:comparison]) && !FileUtils.cmp(f[:original], f[:comparison])
-                error_contents.push "#{f[:comparison]}と内容が一致しません"
-            end
-        end
-        # directoriesの存在確認ー＞存在しないとエラーになる
-        directories.each do |d|
-            unless Dir.exist?(d)
-                error_contents.push "#{d}が存在しません"
-            end
-        end
-        # remove_filesの存在確認ー＞存在するとエラーになる
-        remove_files.each do |f|
-            if File.exist?(f)
-                error_contents.push "#{f}が削除できていません"
-            end
-        end
-        # remove_directoriesの存在確認ー＞存在するとエラーになる
-        remove_directories.each do |d|
-            if Dir.exist?(d)
-                error_contents.push "#{d}が削除できていません"
-            end
-        end
-        # 最後までたどり着けば成功
-        if error_contents.any?
-            test_error test_name, error_contents
-        else
-            puts "success #{test_name}".green
-        end
+        iofd.exec_test
     end
 end
