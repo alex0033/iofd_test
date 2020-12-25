@@ -24,14 +24,47 @@ set_cmd "sample.rb"
 具体的なテストは以下のように書きます。
 ```rb
 iofd "new_file_eq" do |iofd|
-    test_file = "output_files/test_file.output"
+    # ここで、テストに必要なデータをオブジェクト(iofd)に入力する
     iofd.io_contents = [
         { output: "what action: ", input: "mkfile" },
         { output: "file name: ", input: "test_file" },
     ]
     iofd.files = [
-        { original: test_file, comparison: "iofd_test/comparison_files/new_file.txt" }
+        { original: "output_files/test_file.output", comparison: "iofd_test/comparison_files/new_file.txt" }
     ]
     iofd # この一行は毎回忘れずに記述してください。
 end
+```
+## テストの考え方
+### データの意味
+io_contents：コンソールにおけるアウトプットと自動インプットをデータ登録する
+
+files：存在するべきファイルをデータ登録する
+
+remove_files：存在するべきでないファイルをデータ登録する
+
+directories：存在するべきディレクトリをデータ登録する
+
+remove_directories：存在するべきでないディレクトリをデータ登録する
+
+error_contents：エラーメッセージをデータ登録する
+
+test_data：テストのみに使うデータを登録する
+### データ形式
+```rb
+io_contents = [
+    { output: "output1", input: "input" },
+    { output: "output2", input: nil }
+]
+files = [
+    { original: "path1", comparison: "path_a"},
+    { original: "path2", comparison: "path_b"}
+]
+remove_files = ["path1", "path2"]
+directories = ["path1", "path2"]
+remove_directories = ["path1", "path2"]
+error_contents = ["message1", "message2"]
+test_data = {
+    files: ["path1", "path2"], directories: ["path_a", "path_b"]
+}
 ```
