@@ -64,6 +64,19 @@ iofd "remove_directory" do |iofd|
     iofd
 end
 
+iofd "remove_directory2" do |iofd|
+    remove_dir = "remove_directory2"
+    iofd.test_data = {
+        files: [], directories: ["remove_directory2"]
+    }
+    iofd.io_contents = [
+        { output: "what action: ", input: "rmdir" },
+        { output: "directory name: ", input: remove_dir }
+    ]
+    iofd.remove_directories = [remove_dir]
+    iofd
+end
+
 iofd "outputs" do |iofd|
     iofd.io_contents = [
         { output: "what action: ", input: "outputs" },

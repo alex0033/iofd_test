@@ -1,5 +1,3 @@
-require 'pty'
-require 'expect'
 require 'fileutils'
 require './iofd_test/iofd_class.rb'
 
@@ -29,24 +27,7 @@ class String
     end
 end
 
-def auto_io(io_contents)
-    PTY.getpty(@cmd) do |i, o, pid|
-        io_contents.each do |content|
-            i.expect(content[:output]) do |line|
-                puts line.inspect
-                if content[:input]
-                    o.puts content[:input]
-                    i.expect content[:input]
-                end
-            end
-        end
-        # 下記コードでコマンドの終了待ち
-        # これによりディレクトリやファイル作成が反映される
-        Process.wait pid
-    end
-end
-
-def in_test_environment
+def in_test_environment(iofd)
     original_dir = Dir::pwd
     # コピーディレクトリ作成準備
     Dir::chdir ".."
@@ -59,12 +40,26 @@ def in_test_environment
     # コピーディレクトリ作成と移動
     FileUtils.cp_r original_dir, copy_dir
     Dir::chdir copy_dir
+    # テストデータの作成
+    iofd.test_data[:directories].each do |d|
+        Dir.exist?(d) ? iofd.error_contents.push("ディレクトリのデータエラー") : Dir.mkdir(d)
+    end
+    iofd.test_data[:files].each do |f|
+        File.exist?(f) ? iofd.error_contents.push("ファイルのデータエラー") : File.open(f)
+    end
     # 下記でtestを実施
     begin
-        yield
+        iofd.test_error? ? iofd.test_error : yield
     rescue => error
-        puts error
-        puts "come error"
+        iofd.error_contents.push error
+        iofd.test_error
+    end
+    # テストデータの削除
+    iofd.test_data[:files].each do |f|
+        File.delete f if File.exist? f
+    end
+    iofd.test_data[:directories].each do |d|
+        FileUtils.rm_rf d if Dir.exist? d
     end
     # 状態のリセット
     Dir::chdir ".."
@@ -73,9 +68,12 @@ def in_test_environment
 end
 
 def iofd(test_name)
+    puts "始--------始"
     iofd = Iofd.new test_name
     iofd = yield iofd
-    in_test_environment do
+    in_test_environment(iofd) do
         iofd.exec_test
     end
+    puts "終--------終"
+    puts
 end

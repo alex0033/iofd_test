@@ -1,8 +1,11 @@
+require 'pty'
+require 'expect'
 require 'fileutils'
 
 class Iofd
     attr_accessor :io_contents, :files, :remove_files,
-                 :directories, :remove_directories, :test_name
+                  :directories, :remove_directories,
+                  :test_name, :test_data
 
     def initialize(test_name)
         @test_name = test_name
@@ -12,6 +15,7 @@ class Iofd
         @directories = []
         @remove_directories = []
         @error_contents = []
+        @test_data = { files: [], directories: [] }
     end
 
     def self.set_command(cmd)
@@ -25,29 +29,31 @@ class Iofd
         remove_files_test
         remove_directories_test
         # 最後までたどり着けば成功
-        if @error_contents.any?
-            test_error test_name, @error_contents
-        else
-            puts "success #{@test_name}".green
+        test_error? ? test_error : puts("success #{@test_name}".green)
+    end
+
+    def test_error
+        puts "fail #{@test_name}".red
+        @error_contents.each do |content|
+            puts "**#{content}"
         end
     end
 
-    private
+    def test_error?
+        @error_contents.any?
+    end
 
-    def test_error(test_name, messages = [])
-        puts "fail #{test_name}".red
-        messages.each do |message|
-            puts "**#{message}"
-        end
-    end    
+    private  
 
     def io_contents_test
         begin
             PTY.getpty(@@cmd) do |i, o, pid|
                 @io_contents.each do |content|
-                    i.expect(content[:output]) do |line|
+                    i.expect(content[:output], 10) do |line|
+                        # 以下二行で正確な文字列チェック
                         output = line[0].gsub(/[\n\r]/,"")
                         @error_contents.push "期待値：#{content[:output]} 実際：#{output}" unless output == content[:output]
+                        # 下記if文の塊のおかげで
                         if content[:input]
                             o.puts content[:input]
                             i.expect content[:input]
@@ -64,7 +70,7 @@ class Iofd
     end
 
     def files_test
-        # filesの存在確認、内容一致の確認ー＞存在しないとエラーになる
+        # filesの存在確認、内容一致の確認ー＞存在しない、内容不一致だとエラーになる
         @files.each do |f|
             if !File.exist?(f[:original])
                 @error_contents.push "#{f[:original]}が存在しません"
