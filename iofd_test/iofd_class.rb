@@ -3,9 +3,9 @@ require 'expect'
 require 'fileutils'
 
 class Iofd
-    attr_accessor :io_contents, :files, :remove_files,
-                  :directories, :remove_directories,
-                  :test_name, :test_data
+    attr_writer :io_contents, :files, :remove_files,
+                :directories, :remove_directories,
+                :test_data
 
     def initialize(test_name)
         @test_name = test_name
@@ -23,14 +23,12 @@ class Iofd
     end
 
     def exec_test
-        io_contents_test
-        files_test
-        directories_test
-        remove_files_test
-        remove_directories_test
-        # 最後までたどり着けば成功
-        test_error? ? test_error : puts("success #{@test_name}".green)
+        in_test_environment do
+            all_tests
+        end
     end
+
+    private
 
     def test_error
         puts "fail #{@test_name}".red
@@ -43,20 +41,76 @@ class Iofd
         @error_contents.any?
     end
 
-    private  
+    def in_test_environment
+        original_dir = Dir::pwd
+        # コピーディレクトリ作成準備
+        Dir::chdir ".."
+        copy_dir = "#{Dir::pwd}/copy_dir"
+        if Dir.exist? copy_dir || original_dir == copy_dir
+            @error_contents.push "テスト環境が準備できません"
+            test_error
+            Dir::chdir original_dir
+            return
+        end
+        # コピーディレクトリ作成と移動
+        FileUtils.cp_r original_dir, copy_dir
+        Dir::chdir copy_dir
+        # 下記でtestを実施
+        in_test_data do
+            begin
+                test_error? ? test_error : yield
+            rescue => error
+                @error_contents.push error
+                test_error
+            end
+        end
+        # 状態のリセット
+        Dir::chdir ".."
+        FileUtils.rm_rf copy_dir
+        Dir::chdir original_dir
+    end
+
+    def in_test_data
+        # テストデータの作成
+        @test_data[:directories].each do |d|
+            Dir.exist?(d) ? @error_contents.push("ディレクトリのデータエラー") : Dir.mkdir(d)
+        end
+        @test_data[:files].each do |f|
+            File.exist?(f) ? @error_contents.push("ファイルのデータエラー") : File.open(f)
+        end
+        yield
+        # テストデータの削除
+        @test_data[:files].each do |f|
+            File.delete f if File.exist? f
+        end
+        @test_data[:directories].each do |d|
+            FileUtils.rm_rf d if Dir.exist? d
+        end
+    end
+
+    def all_tests
+        io_contents_test
+        files_test
+        directories_test
+        remove_files_test
+        remove_directories_test
+        test_error? ? test_error : puts("success #{@test_name}".green)
+    end
 
     def io_contents_test
         begin
             PTY.getpty(@@cmd) do |i, o, pid|
                 @io_contents.each do |content|
-                    i.expect(content[:output], 10) do |line|
+                    expected_output = content[:output]
+                    expected_input = content[:input]
+                    i.expect(expected_output, 10) do |line|
                         # 以下二行で正確な文字列チェック
                         output = line[0].gsub(/[\n\r]/,"")
-                        @error_contents.push "期待値：#{content[:output]} 実際：#{output}" unless output == content[:output]
+                        @error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
                         # 下記if文の塊のおかげで
-                        if content[:input]
-                            o.puts content[:input]
-                            i.expect content[:input]
+                        if expected_input
+                            o.puts expected_input
+                            i.expect expected_input
                         end
                     end
                 end
