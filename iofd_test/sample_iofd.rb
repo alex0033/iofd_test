@@ -24,6 +24,21 @@ iofd "new_file_eq" do |iofd|
     iofd
 end
 
+iofd "new_file_eq2" do |iofd|
+    test_file = "new_file.txt"
+    from_file = "iofd_test/file_data/new_file.txt"
+    comparison_file = "iofd_test/comparison_files/new_file.txt"
+    iofd.file_data_in_test = [ { from: from_file, to: test_file } ] 
+    iofd.io_contents = [
+        { output: "what action: ", input: "mkfile" },
+        { output: "file name: ", input: "test_file" },
+    ]
+    iofd.files = [
+        { original: test_file, comparison: comparison_file }
+    ]
+    iofd
+end
+
 iofd "change_file_eq" do |iofd|
     iofd.io_contents = [
         { output: "what action: ", input: "chfile" },
@@ -66,9 +81,7 @@ end
 
 iofd "remove_directory2" do |iofd|
     remove_dir = "remove_directory2"
-    iofd.test_data = {
-        files: [], directories: ["remove_directory2"]
-    }
+    iofd.directory_data_in_test = [remove_dir]
     iofd.io_contents = [
         { output: "what action: ", input: "rmdir" },
         { output: "directory name: ", input: remove_dir }

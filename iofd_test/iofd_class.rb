@@ -5,7 +5,7 @@ require 'fileutils'
 class Iofd
     attr_writer :io_contents, :files, :remove_files,
                 :directories, :remove_directories,
-                :test_data
+                :file_data_in_test, :directory_data_in_test
 
     def initialize(test_name)
         @test_name = test_name
@@ -15,7 +15,8 @@ class Iofd
         @directories = []
         @remove_directories = []
         @error_contents = []
-        @test_data = { files: [], directories: [] }
+        @file_data_in_test = []
+        @directory_data_in_test = []
     end
 
     def self.set_command(cmd)
@@ -71,19 +72,32 @@ class Iofd
     end
 
     def in_test_data
-        # テストデータの作成
-        @test_data[:directories].each do |d|
+        make_test_data
+        yield
+        remove_test_data
+        
+    end
+
+    def make_test_data
+        @directory_data_in_test.each do |d|
             Dir.exist?(d) ? @error_contents.push("ディレクトリのデータエラー") : Dir.mkdir(d)
         end
-        @test_data[:files].each do |f|
-            File.exist?(f) ? @error_contents.push("ファイルのデータエラー") : File.open(f)
+        @file_data_in_test.each do |f|
+            if File.exist?(f[:to])
+                @error_contents.push("ファイルのデータエラー")
+            elsif f[:from]
+                FileUtils.cp f[:from], f[:to]
+            else
+                FileUtils.touch(f[:to])
+            end
         end
-        yield
-        # テストデータの削除
-        @test_data[:files].each do |f|
-            File.delete f if File.exist? f
+    end
+
+    def remove_test_data
+        @file_data_in_test.each do |f|
+            File.delete f[:to] if File.exist? f[:to]
         end
-        @test_data[:directories].each do |d|
+        @directory_data_in_test.each do |d|
             FileUtils.rm_rf d if Dir.exist? d
         end
     end
