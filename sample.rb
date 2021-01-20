@@ -57,6 +57,11 @@ def io
     puts st
 end
 
+def plus_with_blank
+    a, b = gets.split(' ').map(&:to_i)
+    puts a + b
+end
+
 print "what action: "
 action = gets.chomp
 
@@ -77,6 +82,8 @@ when "outputs"
     outputs
 when "io"
     io
+when "plus_with_blank"
+    plus_with_blank
 else
     puts "That action is nothing."
 end

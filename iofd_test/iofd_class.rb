@@ -138,7 +138,7 @@ class Iofd
             expected_output = content[:output]
             expected_input = content[:input]
             if expected_output.nil? || expected_output == ""
-                progress_with(expected_output, i, o)
+                progress_with(expected_input, i, o)
                 next
             end
             i.expect(expected_output, 10) do |line|
@@ -146,7 +146,7 @@ class Iofd
                 output = line[0].gsub(/[\n\r]/,"")
                 error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
                 # 下記if文の塊のおかげで
-                progress_with(expected_output, i, o)
+                progress_with(expected_input, i, o)
             end
         end
     end

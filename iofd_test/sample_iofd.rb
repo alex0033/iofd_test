@@ -111,3 +111,12 @@ iofd "io_test" do |iofd|
     ]
     iofd
 end
+
+iofd "plus_with_blank" do |iofd|
+    iofd.io_contents = [
+        { output: "what action: ", input: "plus_with_blank" },
+        { input: "3 7" },
+        { output: "10" }
+    ]
+    iofd
+end
