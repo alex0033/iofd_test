@@ -137,17 +137,27 @@ class Iofd
         io_contents.each do |content|
             expected_output = content[:output]
             expected_input = content[:input]
+            if expected_output.nil? || expected_output == ""
+                progress_with(expected_output, i, o)
+                next
+            end
             i.expect(expected_output, 10) do |line|
                 # 以下二行で正確な文字列チェック
                 output = line[0].gsub(/[\n\r]/,"")
                 error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
                 # 下記if文の塊のおかげで
-                if expected_input
-                    o.puts expected_input
-                    i.expect expected_input
-                end
+                progress_with(expected_output, i, o)
             end
         end
+    end
+
+    # 疑問点：下記コードの役割は二つあるどう命名すると分かりやすいのかな？
+    # 役割①expected_inputを元に自動インプットを行う
+    # 役割②expected_inputを元にコンソールを進める
+    def progress_with(thing, i, o)
+        return if thing.nil?
+        o.puts thing
+        i.expect thing
     end
 
     def exec_files_test
