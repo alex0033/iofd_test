@@ -120,3 +120,11 @@ iofd "plus_with_blank" do |iofd|
     ]
     iofd
 end
+
+iofd "should fail test without infinite loop" do |iofd|
+    iofd.io_contents = [
+        { output: "what action: ", input: "plus_with_blank" },
+        { output: "10" }
+    ]
+    iofd
+end

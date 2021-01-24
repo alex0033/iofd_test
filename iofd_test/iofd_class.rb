@@ -33,6 +33,10 @@ class Iofd
 
     private
 
+    def expect_second
+        0.5
+    end
+
     def fail_test
         puts "fail #{test_name}".red
         error_contents.each do |content|
@@ -141,11 +145,11 @@ class Iofd
                 progress_with(expected_input, i, o)
                 next
             end
-            i.expect(expected_output, 10) do |line|
-                # 以下二行で正確な文字列チェック
+            i.expect(expected_output, expect_second) do |line|
+                error_contents.push "\"#{expected_output}\"が出力されませんでした" if line.nil?
+                # 下記であえて例外を発生させることで、expect_second経つとテストが失敗する
                 output = line[0].gsub(/[\n\r]/,"")
-                error_contents.push "期待値：#{expected_output} 実際：#{output}" unless output == expected_output
-                # 下記if文の塊のおかげで
+                error_contents.push "\"#{expected_output}\"が出力されませんでした" unless output == expected_output
                 progress_with(expected_input, i, o)
             end
         end
@@ -157,7 +161,7 @@ class Iofd
     def progress_with(thing, i, o)
         return if thing.nil?
         o.puts thing
-        i.expect thing
+        i.expect thing, expect_second
     end
 
     def exec_files_test
