@@ -13,7 +13,7 @@ iofd "test" do |iofd|
 end
 
 iofd "new_file_eq" do |iofd|
-    test_file = "output_files/test_file.output"
+    test_file = "sample_data/output_files/test_file.output"
     iofd.io_contents = [
         { output: "what action: ", input: "mkfile" },
         { output: "file name: ", input: "test_file" },
@@ -45,17 +45,18 @@ iofd "change_file_eq" do |iofd|
         { output: "change: ", input: "change" },
     ]
     iofd.files = [
-        { original: "change_file", comparison: "iofd_test/comparison_files/change_file.txt" }
+        { original: "sample_data/change_file", comparison: "iofd_test/comparison_files/change_file.txt" }
     ]
     iofd
 end
 
 iofd "remove_file" do |iofd|
+    remove_file_path = "sample_data/remove_file"
     iofd.io_contents = [
         { output: "what action: ", input: "rmfile" },
-        { output: "remove file: ", input: "remove_file" },
+        { output: "remove file: ", input: remove_file_path },
     ]
-    iofd.remove_files = ["remove_file"]
+    iofd.remove_files = [remove_file_path]
     iofd
 end
 
@@ -70,18 +71,7 @@ iofd "create_directory" do |iofd|
 end
 
 iofd "remove_directory" do |iofd|
-    remove_dir = "remove_directory"
-    iofd.io_contents = [
-        { output: "what action: ", input: "rmdir" },
-        { output: "directory name: ", input: remove_dir }
-    ]
-    iofd.remove_directories = [remove_dir]
-    iofd
-end
-
-iofd "remove_directory2" do |iofd|
-    remove_dir = "remove_directory2"
-    iofd.directory_data_in_test = [remove_dir]
+    remove_dir = "sample_data/remove_directory"
     iofd.io_contents = [
         { output: "what action: ", input: "rmdir" },
         { output: "directory name: ", input: remove_dir }

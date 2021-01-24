@@ -10,7 +10,7 @@ def mkfile
     print "file name: "
     file_name = gets.chomp
     output = "aaa\nbbb"
-    File.open("output_files/#{file_name}.output", "w") do |f|
+    File.open("sample_data/output_files/#{file_name}.output", "w") do |f|
         f.puts output
     end
 end
@@ -18,7 +18,7 @@ end
 def chfile
     print "change: "
     output = gets.chomp
-    File.open("change_file", "w") do |f|
+    File.open("sample_data/change_file", "w") do |f|
         f.puts output
     end
 end
